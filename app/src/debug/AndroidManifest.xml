@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Visibility for the emulator stand-in apps declared in the debug BuildRegistry. -->
+    <queries>
+        <package android:name="com.android.chrome" />
+        <package android:name="com.google.android.deskclock" />
+    </queries>
+
+    <application>
+        <!--
+          Exported so adb can drive it during development. Debug source set only: it is not
+          merged into a release build, so there is no exported control surface on a shipped app.
+        -->
+        <receiver
+            android:name="com.robolock.app.debug.DebugControlReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.robolock.app.debug.SEED" />
+                <action android:name="com.robolock.app.debug.STOP" />
+                <action android:name="com.robolock.app.debug.RESET" />
+                <action android:name="com.robolock.app.debug.DUMP" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

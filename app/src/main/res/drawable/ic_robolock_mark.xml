@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Robolock brand mark: a padlock whose body reads as a robot face. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Shackle -->
+    <path
+        android:strokeColor="#E8EAF2"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M17,22 L17,16 A7,7 0 0 1 31,16 L31,22" />
+
+    <!-- Body -->
+    <path
+        android:fillColor="#E8EAF2"
+        android:pathData="M16,21 L32,21 A7,7 0 0 1 39,28 L39,35 A7,7 0 0 1 32,42 L16,42 A7,7 0 0 1 9,35 L9,28 A7,7 0 0 1 16,21 Z" />
+
+    <!-- Eyes -->
+    <path
+        android:fillColor="#0B0B10"
+        android:pathData="M19.5,31.5 m-3.4,0 a3.4,3.4 0 1,0 6.8,0 a3.4,3.4 0 1,0 -6.8,0 Z" />
+    <path
+        android:fillColor="#0B0B10"
+        android:pathData="M28.5,31.5 m-3.4,0 a3.4,3.4 0 1,0 6.8,0 a3.4,3.4 0 1,0 -6.8,0 Z" />
+</vector>

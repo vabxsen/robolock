@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!--
+      The adaptive-icon folder keeps its -v26 qualifier. Lint calls the qualifier redundant at
+      minSdk 26, but the resource linker rejects the unqualified folder, and this is the layout the
+      Android tooling itself generates.
+    -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+
+    <!--
+      Dependency currency is a deliberate, reviewed decision here: the versions are pinned to a set
+      that is known to work together with this AGP and Kotlin. Upgrades are done on purpose, not
+      because lint noticed a newer number exists.
+    -->
+    <issue id="GradleDependency" severity="informational" />
+    <issue id="NewerVersionAvailable" severity="informational" />
+    <issue id="AndroidGradlePluginVersion" severity="informational" />
+</lint>

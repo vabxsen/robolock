@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Robolock</string>
+
+    <string name="summary_notification_channel">Daily summary</string>
+</resources>

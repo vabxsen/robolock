@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      Robolock deliberately declares no AccessibilityService and requests no accessibility
+      permission. Everything it observes comes from UsageStatsManager (app-level foreground
+      transitions) or from URIs the system explicitly routes to it. It never reads another
+      app's screen contents.
+    -->
+
+    <!--
+      Granted by the user in Settings > Special app access, not by a runtime dialog. The lint
+      suppression is required because the permission is not one an app can request directly.
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Draws the intervention screen. Not an accessibility overlay. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+      Scoped visibility instead of QUERY_ALL_PACKAGES: Robolock only ever asks about the apps
+      in its own supported registry, so it declares exactly those.
+    -->
+    <queries>
+        <package android:name="com.instagram.android" />
+        <package android:name="com.google.android.youtube" />
+        <package android:name="com.whatsapp" />
+    </queries>
+
+    <application
+        android:name=".RobolockApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Robolock">
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="uiMode|orientation|screenSize|screenLayout|keyboardHidden|density|fontScale"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".blocking.LinkInterceptActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:noHistory="true" />
+
+        <!--
+          The link catcher is DISABLED by default and only switched on when the user opts in from
+          the Distractions screen. autoVerify is deliberately absent: Robolock must never quietly
+          become the default handler for someone's Instagram or YouTube links. The patterns are
+          also as narrow as possible — /shorts/ and /reel/ only, never a bare host.
+        -->
+        <activity-alias
+            android:name=".blocking.LinkCatcher"
+            android:enabled="false"
+            android:exported="true"
+            android:targetActivity=".blocking.LinkInterceptActivity">
+
+            <!--
+              autoVerify is explicitly false, not merely omitted. Verifying these domains would
+              make Robolock a default handler and silently take over links the user expects to
+              open in Instagram or YouTube. Appearing in the chooser, only after opting in, is
+              the whole intent.
+            -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" android:host="youtube.com" android:pathPrefix="/shorts/" />
+                <data android:scheme="https" android:host="www.youtube.com" android:pathPrefix="/shorts/" />
+                <data android:scheme="https" android:host="m.youtube.com" android:pathPrefix="/shorts/" />
+                <data android:scheme="https" android:host="instagram.com" android:pathPrefix="/reel/" />
+                <data android:scheme="https" android:host="www.instagram.com" android:pathPrefix="/reel/" />
+                <data android:scheme="https" android:host="instagram.com" android:pathPrefix="/reels/" />
+                <data android:scheme="https" android:host="www.instagram.com" android:pathPrefix="/reels/" />
+            </intent-filter>
+
+            <!-- Sharing a link to Robolock is always an explicit choice, so it carries no risk. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity-alias>
+
+        <!--
+          specialUse rather than dataSync: on API 35 dataSync is capped at six cumulative hours a
+          day, which would silently stop enforcing limits in the evening — exactly when they
+          matter most. The subtype below is the declared justification.
+        -->
+        <service
+            android:name=".monitoring.MonitorService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="digital_wellbeing_app_usage_monitoring" />
+        </service>
+
+        <receiver
+            android:name=".monitoring.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".monitoring.TimeChangeReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
