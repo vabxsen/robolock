@@ -23,16 +23,12 @@ class RulesRepository(
 
     fun observeAll(): Flow<Map<String, AppRules>> = dao.observeAll().map { rows ->
         val stored = rows.associate { it.packageName to it.toDomain() }
-        registry.apps.associate { app ->
-            app.packageName to (stored[app.packageName] ?: defaultFor(app.packageName))
-        }
+        rulesWithBuiltInDefaults(stored)
     }
 
     suspend fun current(): Map<String, AppRules> {
         val stored = dao.all().associate { it.packageName to it.toDomain() }
-        return registry.apps.associate { app ->
-            app.packageName to (stored[app.packageName] ?: defaultFor(app.packageName))
-        }
+        return rulesWithBuiltInDefaults(stored)
     }
 
     suspend fun save(rules: AppRules) = dao.upsert(rules.toEntity())
@@ -45,6 +41,14 @@ class RulesRepository(
     suspend fun clear() = dao.clear()
 
     private fun defaultFor(packageName: String) = AppRules(packageName = packageName, enabled = false)
+
+    /** Keeps explicit rules for user-selected apps outside the small built-in catalog. */
+    private fun rulesWithBuiltInDefaults(stored: Map<String, AppRules>): Map<String, AppRules> = buildMap {
+        registry.apps.forEach { app ->
+            put(app.packageName, stored[app.packageName] ?: defaultFor(app.packageName))
+        }
+        stored.forEach { (packageName, rules) -> put(packageName, rules) }
+    }
 }
 
 private fun AppRuleEntity.toDomain() = AppRules(

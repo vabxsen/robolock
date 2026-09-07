@@ -26,10 +26,16 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!--
-      Scoped visibility instead of QUERY_ALL_PACKAGES: Robolock only ever asks about the apps
-      in its own supported registry, so it declares exactly those.
+      Scoped visibility instead of QUERY_ALL_PACKAGES: Robolock can see launchable apps so the
+      user can choose what to protect, plus the explicit packages used by its built-in catalog.
     -->
     <queries>
+        <!-- Lets App Controls show the launchable apps on this device without requesting
+             QUERY_ALL_PACKAGES. The user still explicitly chooses every app Robolock watches. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
         <package android:name="com.instagram.android" />
         <package android:name="com.google.android.youtube" />
         <package android:name="com.whatsapp" />

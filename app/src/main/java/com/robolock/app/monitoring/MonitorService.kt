@@ -191,11 +191,19 @@ class MonitorService : LifecycleService() {
         }
 
         val foreground = resolver.poll(now())
-        val watched = container.supportedApps.packages
+        // Rules are the watch list. This lets the user protect any launchable app they selected,
+        // while avoiding the battery/privacy cost of monitoring every package on the device.
+        val watched = container.rules.current().values
+            .asSequence()
+            .filter { it.enabled }
+            .map { it.packageName }
+            .toSet()
         val isWatched = foreground != null && foreground in watched
 
-        // Advance the session model.
-        session = if (foreground != null) {
+        // Only watched apps own a session. Letting an arbitrary launcher or another foreground
+        // app occupy the session delays a selected app's first intervention by the 30-second
+        // handoff tolerance, which makes launch protection look broken.
+        session = if (isWatched && foreground != null) {
             when (val result = segmenter.onForeground(session, foreground, now())) {
                 is SegmenterResult.Closed -> {
                     persist(result.closed)
@@ -205,7 +213,8 @@ class MonitorService : LifecycleService() {
                 SegmenterResult.Idle -> null
             }
         } else {
-            (segmenter.onTick(session, now()) as? SegmenterResult.Continuing)?.session ?: session
+            session?.let { persist(segmenter.forceClose(it, now(), SessionEndReason.LEFT_APP)) }
+            null
         }
 
         if (!isWatched || foreground == null) {
@@ -354,9 +363,13 @@ class MonitorService : LifecycleService() {
         )
     }
 
-    private suspend fun todayUsage(packageName: String): Map<String, Long> = mapOf(
-        packageName to container.statistics.foregroundMillisToday(packageName),
-    )
+    private suspend fun todayUsage(packageName: String): Map<String, Long> {
+        val persisted = container.statistics.foregroundMillisToday(packageName)
+        // The active sitting is not persisted until the user leaves the app. Count it here so a
+        // daily limit can intervene during the current session instead of only on the next launch.
+        val active = session?.takeIf { it.packageName == packageName }?.foregroundMillis ?: 0L
+        return mapOf(packageName to persisted + active)
+    }
 
     private fun focusActive(
         schedule: com.robolock.rules.FocusSchedule,

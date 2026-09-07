@@ -220,7 +220,24 @@ class AppControlsViewModel(app: Application) : RobolockViewModel(app) {
         viewModelScope.launch { apps.value = container.installedApps.states() }
     }
 
-    fun setEnabled(packageName: String, enabled: Boolean) = update(packageName) { it.copy(enabled = enabled) }
+    fun setEnabled(packageName: String, enabled: Boolean) {
+        viewModelScope.launch {
+            container.rules.update(packageName) { current ->
+                if (!enabled) {
+                    current.copy(enabled = false)
+                } else {
+                    // An enabled app must have a real intervention path. Without this, a fresh
+                    // rule with no schedule or time limit silently allows the app forever.
+                    val hasTrigger = current.launchFriction ||
+                        current.sessionLimitMillis != null ||
+                        current.dailyLimitMillis != null ||
+                        current.schedule.isSet
+                    current.copy(enabled = true, launchFriction = current.launchFriction || !hasTrigger)
+                }
+            }
+            if (enabled) MonitorService.start(getApplication())
+        }
+    }
 
     fun setSessionLimit(packageName: String, millis: Long?) =
         update(packageName) { it.copy(sessionLimitMillis = millis) }
